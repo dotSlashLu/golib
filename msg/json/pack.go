@@ -21,6 +21,33 @@ import (
 	"reflect"
 )
 
+var (
+	xorKey    = []byte{112, 97, 110, 33, 99}
+	xorKeyLen = len(xorKey)
+)
+
+func xorEncode(data []byte) (msg []byte) {
+	for i, _ := range data {
+		msg = append(msg, data[i]^xorKey[i%xorKeyLen])
+	}
+	return
+}
+
+func xorDecode(msg []byte) (data []byte) {
+	for i, _ := range msg {
+		data = append(data, msg[i]^xorKey[i%xorKeyLen])
+	}
+	return
+}
+
+// 去掉typeByte，key的index有增加
+func xorDecodeShift(msg []byte, shift int) (data []byte) {
+	for i, _ := range msg {
+		data = append(data, msg[i]^xorKey[(i+shift)%xorKeyLen])
+	}
+	return
+}
+
 func (msgCtl *MsgCtl) unpack(typeByte byte, buffer []byte, msgIn Message) (msg Message, err error) {
 	if msgIn == nil {
 		t, ok := msgCtl.typeMap[typeByte]
@@ -44,6 +71,8 @@ func (msgCtl *MsgCtl) UnPackInto(buffer []byte, msg Message) (err error) {
 }
 
 func (msgCtl *MsgCtl) UnPack(typeByte byte, buffer []byte) (msg Message, err error) {
+	typeByte = typeByte ^ xorKey[0]
+	buffer = xorDecodeShift(buffer, 1)
 	return msgCtl.unpack(typeByte, buffer, nil)
 }
 
@@ -62,5 +91,7 @@ func (msgCtl *MsgCtl) Pack(msg Message) ([]byte, error) {
 	buffer.WriteByte(typeByte)
 	binary.Write(buffer, binary.BigEndian, int64(len(content)))
 	buffer.Write(content)
-	return buffer.Bytes(), nil
+	data := buffer.Bytes()
+	data = xorEncode(data)
+	return data, nil
 }
