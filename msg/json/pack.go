@@ -71,8 +71,6 @@ func (msgCtl *MsgCtl) UnPackInto(buffer []byte, msg Message) (err error) {
 }
 
 func (msgCtl *MsgCtl) UnPack(typeByte byte, buffer []byte) (msg Message, err error) {
-	typeByte = typeByte ^ xorKey[0]
-	buffer = xorDecodeShift(buffer, 1)
 	return msgCtl.unpack(typeByte, buffer, nil)
 }
 

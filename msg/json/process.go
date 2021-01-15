@@ -15,6 +15,7 @@
 package json
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -34,16 +35,22 @@ func (msgCtl *MsgCtl) readMsg(c io.Reader) (typeByte byte, buffer []byte, err er
 		return
 	}
 	typeByte = buffer[0]
+	typeByte = typeByte ^ xorKey[0]
 	if _, ok := msgCtl.typeMap[typeByte]; !ok {
 		err = ErrMsgType
 		return
 	}
 
 	var length int64
-	err = binary.Read(c, binary.BigEndian, &length)
+	buffer = make([]byte, 8)
+	err = binary.Read(c, binary.BigEndian, &buffer)
 	if err != nil {
 		return
 	}
+	buffer = xorDecodeShift(buffer, 1)
+	lengthBuffer := bytes.NewBuffer(buffer)
+	binary.Read(lengthBuffer, binary.BigEndian, &length)
+
 	if length > msgCtl.maxMsgLength {
 		err = ErrMaxMsgLength
 		return
@@ -57,6 +64,8 @@ func (msgCtl *MsgCtl) readMsg(c io.Reader) (typeByte byte, buffer []byte, err er
 	if err != nil {
 		return
 	}
+
+	buffer = xorDecodeShift(buffer, 9)
 
 	if int64(n) != length {
 		err = ErrMsgFormat
