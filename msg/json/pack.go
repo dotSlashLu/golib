@@ -27,14 +27,14 @@ var (
 )
 
 func xorEncode(data []byte) (msg []byte) {
-	for i, _ := range data {
+	for i := range data {
 		msg = append(msg, data[i]^xorKey[i%xorKeyLen])
 	}
 	return
 }
 
 func xorDecode(msg []byte) (data []byte) {
-	for i, _ := range msg {
+	for i := range msg {
 		data = append(data, msg[i]^xorKey[i%xorKeyLen])
 	}
 	return
@@ -42,7 +42,7 @@ func xorDecode(msg []byte) (data []byte) {
 
 // 去掉typeByte，key的index有增加
 func xorDecodeShift(msg []byte, shift int) (data []byte) {
-	for i, _ := range msg {
+	for i := range msg {
 		data = append(data, msg[i]^xorKey[(i+shift)%xorKeyLen])
 	}
 	return

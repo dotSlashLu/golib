@@ -29,6 +29,7 @@ var (
 )
 
 func (msgCtl *MsgCtl) readMsg(c io.Reader) (typeByte byte, buffer []byte, err error) {
+	keyIdxShift := 0
 	buffer = make([]byte, 1)
 	_, err = c.Read(buffer)
 	if err != nil {
@@ -36,6 +37,7 @@ func (msgCtl *MsgCtl) readMsg(c io.Reader) (typeByte byte, buffer []byte, err er
 	}
 	typeByte = buffer[0]
 	typeByte = typeByte ^ xorKey[0]
+	keyIdxShift++
 	if _, ok := msgCtl.typeMap[typeByte]; !ok {
 		err = ErrMsgType
 		return
@@ -47,7 +49,8 @@ func (msgCtl *MsgCtl) readMsg(c io.Reader) (typeByte byte, buffer []byte, err er
 	if err != nil {
 		return
 	}
-	buffer = xorDecodeShift(buffer, 1)
+	buffer = xorDecodeShift(buffer, keyIdxShift)
+	keyIdxShift += 8
 	lengthBuffer := bytes.NewBuffer(buffer)
 	binary.Read(lengthBuffer, binary.BigEndian, &length)
 
@@ -65,7 +68,7 @@ func (msgCtl *MsgCtl) readMsg(c io.Reader) (typeByte byte, buffer []byte, err er
 		return
 	}
 
-	buffer = xorDecodeShift(buffer, 9)
+	buffer = xorDecodeShift(buffer, keyIdxShift)
 
 	if int64(n) != length {
 		err = ErrMsgFormat
